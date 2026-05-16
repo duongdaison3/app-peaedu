@@ -1,0 +1,93 @@
+{
+  "Index": {
+    "title": "Chào mừng đến với Nền tảng Đánh giá PEA",
+    "description": "Đánh giá năng lực tiếng Anh của bạn nhanh chóng và chính xác.",
+    "placementTest": "Làm bài Placement test",
+    "login": "Đăng nhập"
+  },
+  "Auth": {
+    "login": "Đăng nhập",
+    "signup": "Tạo tài khoản",
+    "password": "Mật khẩu",
+    "signupSuccess": "Đăng ký thành công!"
+  },
+  "Student": {
+    "welcome": "Chào mừng"
+  },
+  "Teacher": {
+    "welcome": "Chào mừng"
+  },
+  "Admin": {
+    "welcome": "Chào mừng"
+  },
+  "Placement": {
+    "title": "Bài kiểm tra đánh vị trí"
+  },
+  "Dashboard": {
+    "navSections": {
+      "overview": "Tổng quan",
+      "teaching": "Giảng dạy",
+      "assessment": "Đánh giá",
+      "system": "Hệ thống"
+    },
+    "nav": {
+      "overview": "Tổng quan",
+      "courses": "Khóa học",
+      "classes": "Lớp học",
+      "tests": "Bài kiểm tra",
+      "questionBank": "Ngân hàng câu hỏi",
+      "grading": "Chấm điểm",
+      "analytics": "Phân tích",
+      "users": "Quản lý người dùng",
+      "settings": "Cài đặt"
+    },
+    "actions": {
+      "signOut": "Đăng xuất"
+    },
+    "userManagement": {
+      "title": "Quản lý người dùng",
+      "subtitle": "Quản trị người dùng, phân quyền và trạng thái tài khoản trên toàn hệ thống.",
+      "stats": {
+        "totalUsers": "Tổng người dùng",
+        "activeUsers": "Tài khoản hoạt động",
+        "teachers": "Giảng viên",
+        "students": "Học viên"
+      },
+      "filters": {
+        "searchPlaceholder": "Tìm theo tên hoặc email",
+        "allRoles": "Tất cả vai trò",
+        "allStatuses": "Tất cả trạng thái"
+      },
+      "actions": {
+        "applyFilters": "Áp dụng bộ lọc",
+        "loading": "Đang tải..."
+      },
+      "table": {
+        "user": "Người dùng",
+        "role": "Vai trò",
+        "status": "Trạng thái",
+        "workload": "Khối lượng",
+        "joinedAt": "Ngày tham gia",
+        "classes": "Lớp",
+        "tests": "Đề",
+        "attempts": "Lượt làm"
+      },
+      "roles": {
+        "super_admin": "Quản trị cấp cao",
+        "academic_manager": "Quản lý học thuật",
+        "teacher": "Giảng viên",
+        "student": "Học viên"
+      },
+      "statuses": {
+        "active": "Hoạt động",
+        "inactive": "Ngưng hoạt động",
+        "suspended": "Tạm khóa"
+      },
+      "messages": {
+        "loadError": "Không thể tải danh sách người dùng.",
+        "updateError": "Không thể cập nhật người dùng.",
+        "empty": "Không có người dùng phù hợp bộ lọc."
+      }
+    }
+  }
+}

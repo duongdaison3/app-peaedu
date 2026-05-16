@@ -1,0 +1,426 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ENUMS
+enum UserRole {
+  super_admin
+  academic_manager
+  teacher
+  student
+}
+
+enum UserStatus {
+  active
+  inactive
+  suspended
+}
+
+enum AuthProvider {
+  email
+  google
+}
+
+enum QuestionType {
+  // Basic types
+  mcq
+  fill_in_blank
+  essay
+  matching
+  true_false
+  
+  // Speaking & Writing (PTE-style)
+  personal_introduction
+  read_aloud
+  repeat_sentence
+  describe_image
+  re_tell_lecture
+  answer_short_question
+  summarize_group_discussion
+  respond_to_situation
+  
+  // Reading (PTE-style)
+  multiple_choice_single
+  re_order_paragraphs
+  
+  // Listening (PTE-style)
+  summarize_spoken_text
+  highlight_correct_summary
+  select_missing_word
+  write_from_dictation
+}
+
+enum QuestionSkill {
+  listening
+  reading
+  writing
+  speaking
+  grammar
+  vocabulary
+}
+
+enum QuestionDifficulty {
+  easy
+  medium
+  hard
+}
+
+enum MediaType {
+  audio
+  image
+  file
+}
+
+enum TestType {
+  normal
+  placement
+}
+
+enum ShowAnswersMode {
+  immediately
+  after_deadline
+  manual_release
+}
+
+enum AttemptStatus {
+  in_progress
+  submitted
+  graded
+}
+
+// A. AUTH & USER
+model User {
+  id        String       @id @default(uuid())
+  email     String       @unique
+  username  String?      @unique
+  fullName  String?      @map("full_name")
+  avatarUrl String?      @map("avatar_url")
+  role      UserRole     @default(student)
+  status    UserStatus   @default(active)
+  provider  AuthProvider @default(email)
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  coursesCreated  Course[]              @relation("CourseCreator")
+  classesTeaching Class[]               @relation("ClassTeacher")
+  classStudents   ClassStudent[]
+  questionFolders QuestionFolder[]      @relation("FolderCreator")
+  questions       Question[]            @relation("QuestionCreator")
+  testsCreated    Test[]                @relation("TestCreator")
+  testAttempts    TestAttempt[]
+  gradedAnswers   AttemptAnswer[]       @relation("AnswerGrader")
+  skillScores     StudentSkillScore[]
+  studyGoals      StudyGoal[]
+  leaderboards    LeaderboardSnapshot[]
+  antiCheatLogs   AntiCheatLog[]        @relation("UserAntiCheatLogs")
+
+  @@map("users")
+}
+
+// B. COURSE SYSTEM
+model Course {
+  id          String   @id @default(uuid())
+  title       String
+  description String?  @db.Text
+  level       String?
+  createdBy   String   @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  creator User    @relation("CourseCreator", fields: [createdBy], references: [id])
+  classes Class[]
+
+  @@map("courses")
+}
+
+model Class {
+  id        String   @id @default(uuid())
+  courseId  String   @map("course_id")
+  title     String
+  code      String   @unique
+  teacherId String   @map("teacher_id")
+  startDate DateTime @map("start_date")
+  endDate   DateTime @map("end_date")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  course       Course                @relation(fields: [courseId], references: [id])
+  teacher      User                  @relation("ClassTeacher", fields: [teacherId], references: [id])
+  students     ClassStudent[]
+  tests        Test[]
+  leaderboards LeaderboardSnapshot[]
+
+  @@map("classes")
+}
+
+model ClassStudent {
+  id        String   @id @default(uuid())
+  classId   String   @map("class_id")
+  studentId String   @map("student_id")
+  joinedAt  DateTime @default(now()) @map("joined_at")
+
+  class   Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student User  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([classId, studentId])
+  @@map("class_students")
+}
+
+// C. QUESTION BANK
+model QuestionFolder {
+  id        String   @id @default(uuid())
+  parentId  String?  @map("parent_id")
+  title     String
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  parent    QuestionFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children  QuestionFolder[] @relation("FolderHierarchy")
+  creator   User             @relation("FolderCreator", fields: [createdBy], references: [id])
+  questions Question[]
+
+  @@map("question_folders")
+}
+
+model Question {
+  id          String              @id @default(uuid())
+  folderId    String?             @map("folder_id")
+  type        QuestionType
+  skill       QuestionSkill?
+  difficulty  QuestionDifficulty?
+  title       String?
+  content     String              @db.Text
+  explanation String?             @db.Text
+  score       Float               @default(1.0)
+  configJson  Json?               @map("config_json") // Schema-driven configuration (prompt, media, answers, timing, etc.)
+  createdBy   String              @map("created_by")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+
+  folder        QuestionFolder?  @relation(fields: [folderId], references: [id])
+  creator       User             @relation("QuestionCreator", fields: [createdBy], references: [id])
+  options       QuestionOption[]
+  media         QuestionMedia[]
+  tags          QuestionTagMap[]
+  testQuestions TestQuestion[]
+  answers       AttemptAnswer[]
+
+  @@map("questions")
+}
+
+model QuestionTag {
+  id   String @id @default(uuid())
+  name String @unique
+
+  questions QuestionTagMap[]
+
+  @@map("question_tags")
+}
+
+model QuestionTagMap {
+  questionId String @map("question_id")
+  tagId      String @map("tag_id")
+
+  question Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  tag      QuestionTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, tagId])
+  @@map("question_tag_map")
+}
+
+model QuestionOption {
+  id         String  @id @default(uuid())
+  questionId String  @map("question_id")
+  content    String  @db.Text
+  isCorrect  Boolean @default(false) @map("is_correct")
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("question_options")
+}
+
+model QuestionMedia {
+  id         String    @id @default(uuid())
+  questionId String    @map("question_id")
+  type       MediaType
+  url        String
+  duration   Int? // in seconds
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("question_media")
+}
+
+// D. TEST SYSTEM
+model Test {
+  id              String          @id @default(uuid())
+  title           String
+  description     String?         @db.Text
+  type            TestType        @default(normal)
+  password        String?
+  classId         String?         @map("class_id")
+  allowAnonymous  Boolean         @default(false) @map("allow_anonymous")
+  allowRetry      Boolean         @default(false) @map("allow_retry")
+  maxAttempts     Int?            @map("max_attempts")
+  startAt         DateTime?       @map("start_at")
+  endAt           DateTime?       @map("end_at")
+  showAnswersMode ShowAnswersMode @default(after_deadline) @map("show_answers_mode")
+  createdBy       String          @map("created_by")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  class    Class?        @relation(fields: [classId], references: [id])
+  creator  User          @relation("TestCreator", fields: [createdBy], references: [id])
+  sections TestSection[]
+  attempts TestAttempt[]
+
+  @@map("tests")
+}
+
+model TestSection {
+  id              String         @id @default(uuid())
+  testId          String         @map("test_id")
+  title           String
+  skill           QuestionSkill?
+  durationMinutes Int?           @map("duration_minutes")
+  randomizeQuestions Boolean   @default(false) @map("randomize_questions")
+  randomizeAnswers   Boolean   @default(false) @map("randomize_answers")
+  orderIndex      Int            @default(0) @map("order_index")
+
+  test      Test           @relation(fields: [testId], references: [id], onDelete: Cascade)
+  questions TestQuestion[]
+
+  @@map("test_sections")
+}
+
+model TestQuestion {
+  id            String @id @default(uuid())
+  testSectionId String @map("test_section_id")
+  questionId    String @map("question_id")
+  orderIndex    Int    @default(0) @map("order_index")
+  customScore   Float? @map("custom_score")
+
+  section  TestSection @relation(fields: [testSectionId], references: [id], onDelete: Cascade)
+  question Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("test_questions")
+}
+
+// E. TEST ATTEMPTS
+model TestAttempt {
+  id             String        @id @default(uuid())
+  testId         String        @map("test_id")
+  studentId      String?       @map("student_id")
+  anonymousName  String?       @map("anonymous_name")
+  anonymousEmail String?       @map("anonymous_email")
+  anonymousPhone String?       @map("anonymous_phone")
+  status         AttemptStatus @default(in_progress)
+  startedAt      DateTime      @default(now()) @map("started_at")
+  submittedAt    DateTime?     @map("submitted_at")
+  totalScore     Float?        @map("total_score")
+  randomSeed     Int?          @map("random_seed")
+  sectionsOrder  Json?         @map("sections_order")
+
+  test    Test            @relation(fields: [testId], references: [id], onDelete: Cascade)
+  student User?           @relation(fields: [studentId], references: [id])
+  answers AttemptAnswer[]
+  antiCheatLogs AntiCheatLog[] @relation("TestAttemptAntiCheatLogs")
+
+  @@map("test_attempts")
+}
+
+model AttemptAnswer {
+  id         String    @id @default(uuid())
+  attemptId  String    @map("attempt_id")
+  questionId String    @map("question_id")
+  answerText String?   @map("answer_text") @db.Text
+  answerJson Json?     @map("answer_json")
+  score      Float?
+  feedback   String?   @db.Text
+  gradedBy   String?   @map("graded_by")
+  gradedAt   DateTime? @map("graded_at")
+
+  attempt    TestAttempt       @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question   Question          @relation(fields: [questionId], references: [id])
+  grader     User?             @relation("AnswerGrader", fields: [gradedBy], references: [id])
+  recordings AnswerRecording[]
+
+  @@map("attempt_answers")
+}
+
+model AnswerRecording {
+  id       String @id @default(uuid())
+  answerId String @map("answer_id")
+  audioUrl String @map("audio_url")
+  duration Int?
+
+  answer AttemptAnswer @relation(fields: [answerId], references: [id], onDelete: Cascade)
+
+  @@map("answer_recordings")
+}
+
+// F. ANALYTICS
+model StudentSkillScore {
+  id           String        @id @default(uuid())
+  studentId    String        @map("student_id")
+  skill        QuestionSkill
+  averageScore Float         @map("average_score")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, skill])
+  @@map("student_skill_scores")
+}
+
+// G. GOALS
+model StudyGoal {
+  id          String   @id @default(uuid())
+  studentId   String   @map("student_id")
+  targetTests Int      @map("target_tests")
+  targetScore Float    @map("target_score")
+  deadline    DateTime
+  progress    Float    @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("study_goals")
+}
+
+// H. LEADERBOARD
+model LeaderboardSnapshot {
+  id           String   @id @default(uuid())
+  classId      String   @map("class_id")
+  studentId    String   @map("student_id")
+  score        Float
+  rank         Int
+  calculatedAt DateTime @default(now()) @map("calculated_at")
+
+  class   Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student User  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("leaderboard_snapshots")
+}
+
+// I. ANTI-CHEAT LOGS
+model AntiCheatLog {
+  id         String   @id @default(uuid())
+  attemptId  String?  @map("attempt_id")
+  studentId  String?  @map("student_id")
+  reason     String
+  count      Int      @default(1)
+  meta       Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  attempt TestAttempt? @relation("TestAttemptAntiCheatLogs", fields: [attemptId], references: [id], onDelete: Cascade)
+  student User?        @relation("UserAntiCheatLogs", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("anti_cheat_logs")
+}

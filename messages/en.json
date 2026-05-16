@@ -1,0 +1,93 @@
+{
+  "Index": {
+    "title": "Welcome to PEA Assessment Platform",
+    "description": "Evaluate your English proficiency quickly and accurately.",
+    "placementTest": "Take the Placement test",
+    "login": "Sign in"
+  },
+  "Auth": {
+    "login": "Sign In",
+    "signup": "Create Account",
+    "password": "Password",
+    "signupSuccess": "Signup Successful!"
+  },
+  "Student": {
+    "welcome": "Welcome"
+  },
+  "Teacher": {
+    "welcome": "Welcome"
+  },
+  "Admin": {
+    "welcome": "Welcome"
+  },
+  "Placement": {
+    "title": "Placement Test"
+  },
+  "Dashboard": {
+    "navSections": {
+      "overview": "Overview",
+      "teaching": "Teaching",
+      "assessment": "Assessment",
+      "system": "System"
+    },
+    "nav": {
+      "overview": "Overview",
+      "courses": "Courses",
+      "classes": "Classes",
+      "tests": "Tests",
+      "questionBank": "Question Bank",
+      "grading": "Grading",
+      "analytics": "Analytics",
+      "users": "User Management",
+      "settings": "Settings"
+    },
+    "actions": {
+      "signOut": "Sign out"
+    },
+    "userManagement": {
+      "title": "User Management",
+      "subtitle": "Manage users, roles and account status for the whole platform.",
+      "stats": {
+        "totalUsers": "Total users",
+        "activeUsers": "Active users",
+        "teachers": "Teachers",
+        "students": "Students"
+      },
+      "filters": {
+        "searchPlaceholder": "Search by name or email",
+        "allRoles": "All roles",
+        "allStatuses": "All statuses"
+      },
+      "actions": {
+        "applyFilters": "Apply filters",
+        "loading": "Loading..."
+      },
+      "table": {
+        "user": "User",
+        "role": "Role",
+        "status": "Status",
+        "workload": "Workload",
+        "joinedAt": "Joined",
+        "classes": "Classes",
+        "tests": "Tests",
+        "attempts": "Attempts"
+      },
+      "roles": {
+        "super_admin": "Super Admin",
+        "academic_manager": "Academic Manager",
+        "teacher": "Teacher",
+        "student": "Student"
+      },
+      "statuses": {
+        "active": "Active",
+        "inactive": "Inactive",
+        "suspended": "Suspended"
+      },
+      "messages": {
+        "loadError": "Failed to load users.",
+        "updateError": "Failed to update user.",
+        "empty": "No users matched your filters."
+      }
+    }
+  }
+}
