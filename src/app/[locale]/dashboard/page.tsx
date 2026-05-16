@@ -42,8 +42,8 @@ export default function DashboardPage() {
           const tests = await getTests()
           
           let totalStudents = 0
-          classes.forEach(cls => {
-            totalStudents += (cls as any)._count?.students || 0
+          classes.forEach((cls: any) => {
+            totalStudents += cls._count?.students || 0
           })
 
           setStats({
