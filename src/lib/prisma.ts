@@ -9,7 +9,15 @@ const prismaClientSingleton = () => {
     throw new Error('DATABASE_URL or DIRECT_URL environment variable is required')
   }
 
-  const pool = new Pool({ connectionString })
+  // Kiểm tra xem có đang chạy trên máy cá nhân không
+  const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1')
+
+  const pool = new Pool({ 
+    connectionString,
+    // Bypass lỗi "self-signed certificate" trên Vercel khi gọi đến Supabase
+    ssl: isLocal ? undefined : { rejectUnauthorized: false }
+  })
+  
   const adapter = new PrismaPg(pool)
   
   return new PrismaClient({ adapter })
