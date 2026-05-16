@@ -72,6 +72,33 @@ export function QuestionBuilder({
     setLoading(true)
 
     try {
+      // --- BƯỚC MỚI: Quét và upload file trước khi gọi server action ---
+      const processedFormData = { ...formData }
+
+      for (const [key, value] of Object.entries(processedFormData)) {
+        // Kiểm tra xem trường dữ liệu này có phải là một File object không
+        if (value instanceof File) {
+          const uploadData = new FormData()
+          uploadData.append('file', value)
+
+          // Gọi API upload file của dự án
+          const uploadRes = await fetch('/api/upload', {
+            method: 'POST',
+            body: uploadData,
+          })
+
+          if (!uploadRes.ok) {
+            throw new Error(`Upload thất bại cho trường ${key}`)
+          }
+
+          const uploadResult = await uploadRes.json()
+          
+          // Thay thế đối tượng File bằng URL dạng chuỗi trả về từ server
+          processedFormData[key] = uploadResult.url // (Đảm bảo API của bạn trả về key 'url')
+        }
+      }
+      // -----------------------------------------------------------------
+
       const payload = {
         folderId,
         type,
@@ -79,7 +106,8 @@ export function QuestionBuilder({
         skill,
         difficulty,
         tags,
-        config_json: formData
+        // Đưa dữ liệu đã được làm sạch (chỉ chứa URL, không chứa File) xuống DB
+        config_json: processedFormData 
       }
 
       if (question) {
