@@ -79,7 +79,12 @@ export function QuestionBuilder({
         // Kiểm tra xem trường dữ liệu này có phải là một File object không
         if (value instanceof File) {
           const uploadData = new FormData()
-          uploadData.append('file', value)
+          // Sửa 'file' thành 'files' theo yêu cầu của API
+          uploadData.append('files', value)
+          
+          // Xác định type dựa vào mime type của file
+          const fileType = value.type.startsWith('audio/') ? 'audio' : 'image'
+          uploadData.append('type', fileType)
 
           // Gọi API upload file của dự án
           const uploadRes = await fetch('/api/upload', {
@@ -88,13 +93,18 @@ export function QuestionBuilder({
           })
 
           if (!uploadRes.ok) {
-            throw new Error(`Upload thất bại cho trường ${key}`)
+            const errorData = await uploadRes.json()
+            throw new Error(`Upload thất bại cho trường ${key}: ${errorData.error}`)
           }
 
           const uploadResult = await uploadRes.json()
           
-          // Thay thế đối tượng File bằng URL dạng chuỗi trả về từ server
-          processedFormData[key] = uploadResult.url // (Đảm bảo API của bạn trả về key 'url')
+          // API trả về mảng 'files', ta lấy url của file đầu tiên
+          if (uploadResult.files && uploadResult.files.length > 0) {
+             processedFormData[key] = uploadResult.files[0].url 
+          } else {
+             throw new Error(`Không lấy được URL trả về cho trường ${key}`)
+          }
         }
       }
       // -----------------------------------------------------------------
@@ -118,9 +128,9 @@ export function QuestionBuilder({
 
       onSuccess?.()
       onClose?.()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving question:', error)
-      alert('Error saving question. Please try again.')
+      alert(error.message || 'Error saving question. Please try again.')
     } finally {
       setLoading(false)
     }
