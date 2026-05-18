@@ -20,7 +20,7 @@ function mapAttempt(orderedAttempt: any) {
         .map((id) => {
           const tq = byTestQuestionId.get(id)
           if (!tq) return null
-          const q = tq.question || tq
+          const q = (tq as any).question || tq
           return {
             // keep test-question metadata if needed
             _testQuestionId: tq.id,
