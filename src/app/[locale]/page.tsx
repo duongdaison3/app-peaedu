@@ -1,11 +1,11 @@
 import { Link } from '@/i18n/routing'
-import { useTranslations } from 'next-intl'
+import { getTranslations } from 'next-intl/server'
 import { Button } from '@/components/ui/button'
 import { getCurrentUser } from '@/modules/auth/actions'
 import { redirect } from 'next/navigation'
 
 export default async function Home({ params }: { params: { locale: string } }) {
-  const t = useTranslations('Index')
+  const t = await getTranslations('Index')
 
   // Nếu đã đăng nhập, redirect server-side về dashboard theo role
   try {
