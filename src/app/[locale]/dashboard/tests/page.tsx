@@ -50,7 +50,7 @@ export default function TestsPage() {
         sections: []
       })
       setShowForm(false)
-      setFormData({ title: '', description: '', type: 'normal' })
+      setFormData({ title: '', description: '', type: 'normal', allowAnonymous: false })
       router.push(`/dashboard/tests/builder/${newTest.id}`)
     } catch (error: any) {
       console.error('Error creating test:', error)
