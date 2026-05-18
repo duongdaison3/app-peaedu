@@ -12,10 +12,23 @@ function mapAttempt(orderedAttempt: any) {
     const orderedIds = orderMap.get(section.id)
     if (!orderedIds) return section
 
-    const byTestQuestionId = new Map(section.questions.map((question: any) => [question.id, question]))
+    const byTestQuestionId = new Map(section.questions.map((tq: any) => [tq.id, tq]))
     return {
       ...section,
-      questions: orderedIds.map(id => byTestQuestionId.get(id)).filter(Boolean)
+      // Unwrap the nested `question` record so the client receives plain question objects
+      questions: orderedIds
+        .map((id) => {
+          const tq = byTestQuestionId.get(id)
+          if (!tq) return null
+          const q = tq.question || tq
+          return {
+            // keep test-question metadata if needed
+            _testQuestionId: tq.id,
+            orderIndex: tq.orderIndex,
+            ...q
+          }
+        })
+        .filter(Boolean)
     }
   })
 

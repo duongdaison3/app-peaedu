@@ -1,9 +1,25 @@
-import { Link } from '@/i18n/routing';
-import { useTranslations } from 'next-intl';
-import { Button } from '@/components/ui/button';
+import { Link } from '@/i18n/routing'
+import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/button'
+import { getCurrentUser } from '@/modules/auth/actions'
+import { redirect } from 'next/navigation'
 
-export default function Home() {
-  const t = useTranslations('Index');
+export default async function Home({ params }: { params: { locale: string } }) {
+  const t = useTranslations('Index')
+
+  // Nếu đã đăng nhập, redirect server-side về dashboard theo role
+  try {
+    const user = await getCurrentUser()
+    if (user) {
+      const locale = params?.locale || 'vi'
+      if (user.role === 'teacher') return redirect(`/${locale}/teacher/dashboard`)
+      if (user.role === 'student') return redirect(`/${locale}/student/dashboard`)
+      if (user.role === 'super_admin' || user.role === 'academic_manager') return redirect(`/${locale}/admin/dashboard`)
+      return redirect(`/${locale}/dashboard`)
+    }
+  } catch (e) {
+    // ignore and render public home
+  }
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.09),transparent_38%),linear-gradient(180deg,#ffffff_0%,#f8fafc_56%,#eef2ff_100%)] text-zinc-950">

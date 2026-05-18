@@ -142,13 +142,20 @@ export function QuestionBuilder({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-zinc-200 dark:border-zinc-800 sticky top-0 bg-white dark:bg-zinc-950">
           <div>
-            <h2 className="text-xl font-bold text-zinc-900 dark:text-white">
-              {question ? 'Edit Question' : 'Create Question'}
-            </h2>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-              {schema.label} - {schema.description}
-            </p>
-          </div>
+              <h2 className="text-xl font-bold text-zinc-900 dark:text-white">
+                {question ? 'Edit Question' : 'Create Question'}
+              </h2>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+                {schema.label} - {schema.description}
+              </p>
+              {folderId && (
+                <div className="mt-2">
+                  <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 rounded">
+                    Folder: {folderId}
+                  </span>
+                </div>
+              )}
+            </div>
           <button
             onClick={onClose}
             className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded transition-colors"

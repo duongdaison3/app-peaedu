@@ -16,7 +16,8 @@ export default function TestsPage() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    type: 'normal' as any
+    type: 'normal' as any,
+    allowAnonymous: false
   })
   const [creating, setCreating] = useState(false)
 
@@ -45,6 +46,7 @@ export default function TestsPage() {
         title: formData.title || 'Bài thi chưa đặt tên',
         description: formData.description,
         type: formData.type,
+        allowAnonymous: formData.allowAnonymous,
         sections: []
       })
       setShowForm(false)
@@ -143,6 +145,18 @@ export default function TestsPage() {
                 <option value="placement">Đánh giá trình độ</option>
               </select>
             </div>
+
+              {formData.type === 'placement' && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.allowAnonymous}
+                    onChange={(e) => setFormData({ ...formData, allowAnonymous: e.target.checked })}
+                    id="allowAnonymous"
+                  />
+                  <label htmlFor="allowAnonymous" className="text-sm text-zinc-700 dark:text-zinc-300">Cho phép làm bài công khai (không cần đăng nhập)</label>
+                </div>
+              )}
 
             <div className="flex gap-2 justify-end">
               <Button

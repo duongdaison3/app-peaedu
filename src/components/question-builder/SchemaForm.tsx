@@ -246,14 +246,22 @@ function OptionsListField({
   placeholder
 }: OptionsListFieldProps) {
   const items = Array.isArray(value) ? value : []
+  // Detect whether items are objects (with content/isCorrect) or simple strings
+  const isObjectItems = items.length > 0 ? typeof items[0] === 'object' : true
 
   const addItem = () => {
-    onChange([...items, { content: '', isCorrect: false }])
+    if (isObjectItems) onChange([...items, { content: '', isCorrect: false }])
+    else onChange([...items, ''])
   }
 
-  const updateItem = (index: number, field: string, fieldValue: any) => {
+  const updateItem = (index: number, fieldOrValue: string, fieldValue?: any) => {
     const newItems = [...items]
-    newItems[index] = { ...newItems[index], [field]: fieldValue }
+    if (isObjectItems) {
+      const field = fieldOrValue
+      newItems[index] = { ...newItems[index], [field]: fieldValue }
+    } else {
+      newItems[index] = fieldOrValue
+    }
     onChange(newItems)
   }
 
@@ -265,20 +273,35 @@ function OptionsListField({
     <div className="space-y-2">
       {items.map((item: any, index: number) => (
         <div key={index} className="flex gap-2">
-          <input
-            type="checkbox"
-            checked={item.isCorrect || false}
-            onChange={(e) => updateItem(index, 'isCorrect', e.target.checked)}
-            className="mt-2 w-4 h-4"
-            title="Mark as correct"
-          />
-          <textarea
-            value={item.content || ''}
-            onChange={(e) => updateItem(index, 'content', e.target.value)}
-            placeholder={placeholder || `Item ${index + 1}`}
-            rows={2}
-            className="flex-1 px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-          />
+          {isObjectItems ? (
+            <>
+              <input
+                type="checkbox"
+                checked={item.isCorrect || false}
+                onChange={(e) => updateItem(index, 'isCorrect', e.target.checked)}
+                className="mt-2 w-4 h-4"
+                title="Mark as correct"
+              />
+              <textarea
+                value={item.content || ''}
+                onChange={(e) => updateItem(index, e.target.value)}
+                placeholder={placeholder || `Item ${index + 1}`}
+                rows={2}
+                className="flex-1 px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </>
+          ) : (
+            <>
+              <textarea
+                value={item || ''}
+                onChange={(e) => updateItem(index, e.target.value)}
+                placeholder={placeholder || `Item ${index + 1}`}
+                rows={2}
+                className="flex-1 px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </>
+          )}
+
           <button
             type="button"
             onClick={() => removeItem(index)}

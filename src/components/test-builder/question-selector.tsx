@@ -15,6 +15,7 @@ export function QuestionSelector({
   onClose,
   excludeIds = []
 }: QuestionSelectorProps) {
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [questions, setQuestions] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedScore, setSelectedScore] = useState('1')
@@ -67,42 +68,67 @@ export function QuestionSelector({
             <div className="text-center py-8 text-zinc-500">No questions found</div>
           ) : (
             filteredQuestions.map((q) => (
-              <div
-                key={q.id}
-                className="flex items-center gap-3 p-3 bg-zinc-100 dark:bg-zinc-900 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800"
-              >
-                <div className="flex-1">
-                  <p className="font-medium text-zinc-900 dark:text-white text-sm">
-                    {q.title || 'Untitled'}
-                  </p>
-                  <p className="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-1">
-                    {q.content}
-                  </p>
-                  <div className="flex gap-2 mt-1">
-                    <span className="inline-block px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 rounded">
-                      {q.type}
-                    </span>
-                    {q.skill && (
-                      <span className="inline-block px-2 py-0.5 text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 rounded">
-                        {q.skill}
-                      </span>
-                    )}
-                  </div>
-                </div>
+                      <div
+                        key={q.id}
+                        className="flex items-center gap-3 p-3 bg-zinc-100 dark:bg-zinc-900 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(q.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) setSelectedIds((s) => [...s, q.id])
+                            else setSelectedIds((s) => s.filter((id) => id !== q.id))
+                          }}
+                        />
 
-                <button
-                  onClick={() => onSelectQuestion(q.id, parseFloat(selectedScore))}
-                  className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm whitespace-nowrap"
-                >
-                  Add
-                </button>
-              </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-zinc-900 dark:text-white text-sm">
+                            {q.title || 'Untitled'}
+                          </p>
+                          <p className="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-1">
+                            {q.content}
+                          </p>
+                          <div className="flex gap-2 mt-1">
+                            <span className="inline-block px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 rounded">
+                              {q.type}
+                            </span>
+                            {q.skill && (
+                              <span className="inline-block px-2 py-0.5 text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 rounded">
+                                {q.skill}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => onSelectQuestion(q.id, parseFloat(selectedScore))}
+                          className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm whitespace-nowrap"
+                        >
+                          Add
+                        </button>
+                      </div>
             ))
           )}
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 flex gap-2 justify-end">
+        <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 flex gap-2 justify-end items-center">
+          <div className="flex-1 text-sm text-zinc-600 dark:text-zinc-400">Selected: {selectedIds.length}</div>
+          <button
+            onClick={async () => {
+              // Add all selected sequentially
+              for (const id of selectedIds) {
+                await onSelectQuestion(id, parseFloat(selectedScore))
+              }
+              setSelectedIds([])
+              onClose?.()
+            }}
+            disabled={selectedIds.length === 0}
+            className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 text-sm"
+          >
+            Add Selected ({selectedIds.length})
+          </button>
+
           <button
             onClick={onClose}
             className="px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900"

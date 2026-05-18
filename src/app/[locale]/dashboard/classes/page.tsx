@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { getClasses, createClass, joinClassByCode } from '@/modules/course/actions'
+import { getClasses, joinClassByCode } from '@/modules/course/actions'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
@@ -38,7 +38,15 @@ export default function ClassesPage() {
 
     try {
       setCreating(true)
-      await createClass({ courseId, title: form.title, startDate: new Date(form.startDate), endDate: new Date(form.endDate) })
+      const res = await fetch('/api/classes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ courseId, title: form.title, startDate: form.startDate, endDate: form.endDate })
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data?.error || 'Lỗi tạo lớp')
+      }
       toast.success('Đã tạo lớp')
       setForm({ title: '', startDate: '', endDate: '' })
       load()
@@ -51,7 +59,9 @@ export default function ClassesPage() {
 
   const handleJoin = async () => {
     try {
-      await joinClassByCode(joinCode.trim())
+      const res = await fetch('/api/classes/join', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: joinCode.trim() }) })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || 'Lỗi tham gia lớp')
       toast.success('Đã tham gia lớp')
       setJoinCode('')
       load()
