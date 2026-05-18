@@ -18,7 +18,7 @@ function mapAttempt(orderedAttempt: any) {
       // Unwrap the nested `question` record so the client receives plain question objects
       questions: orderedIds
         .map((id) => {
-          const tq = byTestQuestionId.get(id)
+          const tq = byTestQuestionId.get(id) as any
           if (!tq) return null
           const q = (tq as any).question || tq
           return {
