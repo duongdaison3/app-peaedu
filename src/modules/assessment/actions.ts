@@ -184,6 +184,7 @@ export async function updateQuestion(
   const updated = await prisma.question.update({
     where: { id: questionId },
     data: {
+      ...(data.folderId !== undefined && { folderId: data.folderId || null }),
       type: data.type,
       skill: data.skill,
       difficulty: data.difficulty,
