@@ -46,6 +46,7 @@ export async function getQuestionFolders(userId?: string) {
  */
 export async function createQuestion({
   folderId,
+  parentQuestionId,
   type,
   skill,
   difficulty,
@@ -55,6 +56,7 @@ export async function createQuestion({
   score = 1
 }: {
   folderId?: string
+  parentQuestionId?: string
   type: QuestionType
   skill?: QuestionSkill
   difficulty?: QuestionDifficulty
@@ -68,6 +70,7 @@ export async function createQuestion({
   const question = await prisma.question.create({
     data: {
       folderId: folderId || null,
+      parentQuestionId: parentQuestionId || null,
       type,
       skill,
       difficulty,
@@ -385,4 +388,59 @@ export async function updateQuestionFolder(folderId: string, title: string) {
   })
 
   return updated
+}
+
+/**
+ * Get reading comprehension question with child questions
+ */
+export async function getReadingComprehension(questionId: string) {
+  const user = await requireRoles(['teacher', 'academic_manager', 'super_admin'])
+
+  const passage = await prisma.question.findUnique({
+    where: { id: questionId },
+    include: {
+      childQuestions: {
+        include: {
+          options: true,
+          tags: { include: { tag: true } },
+          media: true
+        },
+        orderBy: { createdAt: 'asc' }
+      },
+      tags: { include: { tag: true } },
+      media: true,
+      creator: { select: { id: true, fullName: true } }
+    }
+  })
+
+  if (!passage) throw new Error('Reading passage not found')
+  if (passage.createdBy !== user.id) throw new Error('Unauthorized')
+
+  return passage
+}
+
+/**
+ * Get all reading comprehensions (passages with count of child questions)
+ */
+export async function getReadingComprehensions(folderId?: string) {
+  const user = await requireRoles(['teacher', 'academic_manager', 'super_admin'])
+
+  // Get questions that have child questions (they are parent passages)
+  const comprehensions = await prisma.question.findMany({
+    where: {
+      createdBy: user.id,
+      folderId: folderId || undefined,
+      childQuestions: {
+        some: {} // Has at least one child
+      }
+    },
+    include: {
+      _count: { select: { childQuestions: true } },
+      tags: { include: { tag: true } },
+      media: true
+    },
+    orderBy: { createdAt: 'desc' }
+  })
+
+  return comprehensions
 }

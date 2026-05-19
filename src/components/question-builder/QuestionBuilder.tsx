@@ -10,6 +10,7 @@ import type { QuestionType, QuestionSkill, QuestionDifficulty } from '@prisma/cl
 
 interface QuestionBuilderProps {
   folderId?: string
+  parentQuestionId?: string
   question?: any
   onSuccess?: () => void
   onClose?: () => void
@@ -17,6 +18,7 @@ interface QuestionBuilderProps {
 
 export function QuestionBuilder({
   folderId,
+  parentQuestionId,
   question,
   onSuccess,
   onClose
@@ -111,6 +113,7 @@ export function QuestionBuilder({
 
       const payload = {
         folderId,
+        parentQuestionId,
         type,
         title,
         skill,
@@ -148,13 +151,18 @@ export function QuestionBuilder({
               <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
                 {schema.label} - {schema.description}
               </p>
-              {folderId && (
-                <div className="mt-2">
+              <div className="mt-2 flex gap-2">
+                {folderId && (
                   <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 rounded">
                     Folder: {folderId}
                   </span>
-                </div>
-              )}
+                )}
+                {parentQuestionId && (
+                  <span className="inline-block px-2 py-1 text-xs font-medium bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 rounded">
+                    Child Question
+                  </span>
+                )}
+              </div>
             </div>
           <button
             onClick={onClose}

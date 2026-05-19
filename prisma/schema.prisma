@@ -188,27 +188,30 @@ model QuestionFolder {
 }
 
 model Question {
-  id          String              @id @default(uuid())
-  folderId    String?             @map("folder_id")
-  type        QuestionType
-  skill       QuestionSkill?
-  difficulty  QuestionDifficulty?
-  title       String?
-  content     String              @db.Text
-  explanation String?             @db.Text
-  score       Float               @default(1.0)
-  configJson  Json?               @map("config_json") // Schema-driven configuration (prompt, media, answers, timing, etc.)
-  createdBy   String              @map("created_by")
-  createdAt   DateTime            @default(now()) @map("created_at")
-  updatedAt   DateTime            @updatedAt @map("updated_at")
+  id                String              @id @default(uuid())
+  folderId          String?             @map("folder_id")
+  parentQuestionId  String?             @map("parent_question_id") // For hierarchical questions (e.g., reading passage with child questions)
+  type              QuestionType
+  skill             QuestionSkill?
+  difficulty        QuestionDifficulty?
+  title             String?
+  content           String              @db.Text
+  explanation       String?             @db.Text
+  score             Float               @default(1.0)
+  configJson        Json?               @map("config_json") // Schema-driven configuration (prompt, media, answers, timing, etc.)
+  createdBy         String              @map("created_by")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
 
-  folder        QuestionFolder?  @relation(fields: [folderId], references: [id])
-  creator       User             @relation("QuestionCreator", fields: [createdBy], references: [id])
-  options       QuestionOption[]
-  media         QuestionMedia[]
-  tags          QuestionTagMap[]
-  testQuestions TestQuestion[]
-  answers       AttemptAnswer[]
+  folder          QuestionFolder?  @relation(fields: [folderId], references: [id])
+  parentQuestion  Question?        @relation("ParentChildQuestions", fields: [parentQuestionId], references: [id], onDelete: Cascade)
+  childQuestions  Question[]       @relation("ParentChildQuestions")
+  creator         User             @relation("QuestionCreator", fields: [createdBy], references: [id])
+  options         QuestionOption[]
+  media           QuestionMedia[]
+  tags            QuestionTagMap[]
+  testQuestions   TestQuestion[]
+  answers         AttemptAnswer[]
 
   @@map("questions")
 }

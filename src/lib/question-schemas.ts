@@ -778,6 +778,49 @@ export const RESPOND_TO_SITUATION_SCHEMA: QuestionBuilderSchema = {
 // READING TYPES
 // ============================================================
 
+export const READING_COMPREHENSION_SCHEMA: QuestionBuilderSchema = {
+  type: 'multiple_choice_single', // Will be overridden for UI purposes
+  label: 'Reading Comprehension',
+  description: 'Passage with multiple child questions',
+  sections: [
+    {
+      id: 'passage',
+      title: 'Passage Content',
+      fields: {
+        instruction: {
+          type: 'textarea',
+          label: 'Instruction (optional)',
+          placeholder: 'e.g., Read the passage and answer the questions below.'
+        },
+        passage: {
+          type: 'richtext',
+          label: 'Passage Text *',
+          required: true,
+          placeholder: 'Enter the reading passage here...'
+        }
+      }
+    },
+    {
+      id: 'settings',
+      title: 'Settings',
+      layout: 'grid',
+      columns: 2,
+      fields: {
+        vocabulary: {
+          type: 'textarea',
+          label: 'Vocabulary/Glossary (optional)',
+          placeholder: 'Define difficult words from the passage'
+        },
+        wordCount: {
+          type: 'number',
+          label: 'Passage word count (auto-calculated)',
+          validation: { min: 0 }
+        }
+      }
+    }
+  ]
+}
+
 export const READING_MULTIPLE_CHOICE_SCHEMA: QuestionBuilderSchema = {
   type: 'multiple_choice_single',
   label: 'Reading Multiple Choice',
