@@ -1,8 +1,8 @@
-'use client'
+ 'use client'
 
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { getClasses, joinClassByCode } from '@/modules/course/actions'
+import { getClasses, joinClassByCode, getCourses } from '@/modules/course/actions'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
@@ -10,6 +10,8 @@ import { toast } from 'sonner'
 export default function ClassesPage() {
   const params = useSearchParams()
   const courseId = params.get('course')
+  const [availableCourses, setAvailableCourses] = useState<any[]>([])
+  const [selectedCourse, setSelectedCourse] = useState<string | null>(courseId || null)
   const [classes, setClasses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ title: '', startDate: '', endDate: '' })
@@ -18,7 +20,18 @@ export default function ClassesPage() {
 
   useEffect(() => {
     load()
+    loadCourses()
   }, [])
+
+  const loadCourses = async () => {
+    try {
+      const data = await getCourses()
+      setAvailableCourses(data || [])
+      if (!selectedCourse && data?.[0]) setSelectedCourse(data[0].id)
+    } catch (err) {
+      // ignore
+    }
+  }
 
   const load = async () => {
     try {
@@ -34,14 +47,16 @@ export default function ClassesPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!courseId) return toast.error('Course ID missing')
+    const targetCourse = selectedCourse || courseId
+    if (!targetCourse) return toast.error('Course ID missing')
 
     try {
       setCreating(true)
       const res = await fetch('/api/classes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ courseId, title: form.title, startDate: form.startDate, endDate: form.endDate })
+        credentials: 'include',
+        body: JSON.stringify({ courseId: targetCourse, title: form.title, startDate: form.startDate, endDate: form.endDate })
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
@@ -59,7 +74,7 @@ export default function ClassesPage() {
 
   const handleJoin = async () => {
     try {
-      const res = await fetch('/api/classes/join', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: joinCode.trim() }) })
+      const res = await fetch('/api/classes/join', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ code: joinCode.trim() }) })
       const data = await res.json()
       if (!res.ok) throw new Error(data?.error || 'Lỗi tham gia lớp')
       toast.success('Đã tham gia lớp')
@@ -87,6 +102,13 @@ export default function ClassesPage() {
         <div className="bg-white dark:bg-zinc-900 p-4 rounded border border-zinc-200 dark:border-zinc-800">
           <h3 className="font-semibold mb-2">Tạo lớp mới</h3>
           <form onSubmit={handleCreate} className="space-y-3">
+            <label className="block text-sm mb-1">Khóa học</label>
+            <select value={selectedCourse || ''} onChange={e => setSelectedCourse(e.target.value)} className="w-full px-3 py-2 border rounded mb-2">
+              <option value="">Select course...</option>
+              {availableCourses.map((c) => (
+                <option key={c.id} value={c.id}>{c.title}</option>
+              ))}
+            </select>
             <input placeholder="Tiêu đề lớp" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="w-full px-3 py-2 border rounded" />
             <input type="date" value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })} className="w-full px-3 py-2 border rounded" />
             <input type="date" value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })} className="w-full px-3 py-2 border rounded" />
@@ -118,7 +140,19 @@ export default function ClassesPage() {
                   <h4 className="font-semibold">{cl.title}</h4>
                   <p className="text-sm text-zinc-600">Mã: {cl.code}</p>
                 </div>
-                <div className="text-sm text-zinc-600">{cl.course?.title}</div>
+                <div className="text-sm text-zinc-600 flex items-center gap-2">
+                  <span>{cl.course?.title}</span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard?.writeText(cl.code)
+                      .then(() => toast.success('Mã lớp đã được sao chép'))
+                      .catch(() => toast.error('Không thể sao chép'))
+                    }}
+                    className="text-xs px-2 py-1 bg-zinc-100 rounded"
+                  >
+                    Copy mã
+                  </button>
+                </div>
               </div>
             ))}
           </div>

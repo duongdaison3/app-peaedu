@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Plus, Edit2, Trash2, Play, BarChart3 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { getTests, createTest, deleteTest, startTestAttempt } from '@/modules/test/actions'
+import { getCourses } from '@/modules/course/actions'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 
@@ -19,11 +20,24 @@ export default function TestsPage() {
     type: 'normal' as any,
     allowAnonymous: false
   })
+  const [availableCourses, setAvailableCourses] = useState<any[]>([])
+  const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>(undefined)
   const [creating, setCreating] = useState(false)
 
   useEffect(() => {
     loadTests()
+    loadCourses()
   }, [])
+
+  const loadCourses = async () => {
+    try {
+      const data = await getCourses()
+      setAvailableCourses(data || [])
+      if (data?.[0]) setSelectedCourseId(data[0].id)
+    } catch (err) {
+      // ignore
+    }
+  }
 
   const loadTests = async () => {
     try {
@@ -47,7 +61,8 @@ export default function TestsPage() {
         description: formData.description,
         type: formData.type,
         allowAnonymous: formData.allowAnonymous,
-        sections: []
+        sections: [],
+        classId: selectedCourseId || undefined
       })
       setShowForm(false)
       setFormData({ title: '', description: '', type: 'normal', allowAnonymous: false })
@@ -145,6 +160,16 @@ export default function TestsPage() {
                 <option value="placement">Đánh giá trình độ</option>
               </select>
             </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Thuộc lớp (tùy chọn)</label>
+                <select value={selectedCourseId || ''} onChange={(e) => setSelectedCourseId(e.target.value || undefined)} className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                  <option value="">Không thuộc lớp</option>
+                  {availableCourses.map(c => (
+                    <option key={c.id} value={c.id}>{c.title}</option>
+                  ))}
+                </select>
+              </div>
 
               {formData.type === 'placement' && (
                 <div className="flex items-center gap-2">
@@ -246,6 +271,19 @@ export default function TestsPage() {
                   onClick={() => router.push(`/dashboard/tests/builder/${test.id}`)}
                 >
                   <Edit2 size={14} />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const locale = window.location.pathname.split('/')[1] || 'vi'
+                    const url = `/${locale}/student/test/${test.id}`
+                    navigator.clipboard?.writeText(window.location.origin + url)
+                      .then(() => toast.success('Link bài thi đã được sao chép'))
+                      .catch(() => toast.error('Không thể sao chép'))
+                  }}
+                >
+                  Copy Link
                 </Button>
                 <Button
                   size="sm"

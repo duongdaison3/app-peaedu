@@ -102,33 +102,57 @@ export const FILL_IN_BLANK_SCHEMA: QuestionBuilderSchema = {
   description: 'Students type answer to fill blanks',
   sections: [
     {
-      id: 'prompt',
-      title: 'Passage',
+      id: 'passage',
+      title: 'Passage Content',
       fields: {
-        content: {
-          type: 'code-editor',
-          label: 'Passage with blanks *',
+        instruction: {
+          type: 'textarea',
+          label: 'Instruction (optional)',
+          placeholder: 'e.g., Fill in the blanks with the correct words.'
+        },
+        passage: {
+          type: 'richtext',
+          label: 'Passage *',
           required: true,
-          placeholder: 'Use [[blank_1]], [[blank_2]] for blanks\nExample: The boy [[blank_1]] to school.'
+          placeholder: 'Use [[blank_1]], [[blank_2]], etc. for blanks.\nExample: The boy [[blank_1]] to school every day.'
         }
       }
     },
     {
-      id: 'answers',
-      title: 'Accepted Answers',
+      id: 'blanks',
+      title: 'Blank Configuration',
       fields: {
-        answers: {
+        blanks: {
           type: 'options-list',
-          label: 'For each blank, provide accepted answers',
-          required: true
+          label: 'Correct answers (one per line for each blank)',
+          required: true,
+          description: 'List correct answer for Blank 1, Blank 2, etc. (one answer per blank)'
         },
         caseSensitive: {
           type: 'checkbox',
-          label: 'Case sensitive'
+          label: 'Case sensitive matching'
         },
         partialMatch: {
           type: 'checkbox',
-          label: 'Allow partial matching'
+          label: 'Allow partial word matching'
+        }
+      }
+    },
+    {
+      id: 'options',
+      title: 'Extra Settings',
+      layout: 'grid',
+      columns: 2,
+      fields: {
+        hint: {
+          type: 'textarea',
+          label: 'Hint (optional)',
+          placeholder: 'Provide a hint for students'
+        },
+        explanation: {
+          type: 'textarea',
+          label: 'Explanation (optional)',
+          placeholder: 'Explain why this is the correct answer'
         }
       }
     }
@@ -190,17 +214,52 @@ export const MATCHING_SCHEMA: QuestionBuilderSchema = {
   description: 'Match items from two columns',
   sections: [
     {
-      id: 'content',
-      title: 'Matching Items',
+      id: 'instruction',
+      title: 'Instructions',
       fields: {
         instruction: {
           type: 'textarea',
-          label: 'Instruction (optional)'
-        },
-        items: {
+          label: 'Instruction (optional)',
+          placeholder: 'e.g., Match each vocabulary word with its meaning.'
+        }
+      }
+    },
+    {
+      id: 'pairs',
+      title: 'Matching Pairs',
+      fields: {
+        pairs: {
           type: 'options-list',
-          label: 'Left column items + Right column pairs *',
-          required: true
+          label: 'Left Column → Right Column (format: left | right)',
+          required: true,
+          description: 'Enter each pair separated by |. Example: apple | a fruit'
+        }
+      }
+    },
+    {
+      id: 'settings',
+      title: 'Settings',
+      layout: 'grid',
+      columns: 2,
+      fields: {
+        shuffleRight: {
+          type: 'checkbox',
+          label: 'Shuffle right column for students'
+        },
+        showExplanation: {
+          type: 'checkbox',
+          label: 'Show explanation after submit'
+        }
+      }
+    },
+    {
+      id: 'explanation',
+      title: 'Explanation',
+      fields: {
+        explanation: {
+          type: 'textarea',
+          label: 'Explanation (optional)',
+          placeholder: 'Help students understand the correct matches'
         }
       }
     }
@@ -482,53 +541,61 @@ export const ANSWER_SHORT_QUESTION_SCHEMA: QuestionBuilderSchema = {
   sections: [
     {
       id: 'question',
-      title: 'Question',
+      title: 'Question Content',
       fields: {
         instruction: {
           type: 'textarea',
-          label: 'Instruction'
-        },
-        questionAudio: {
-          type: 'upload',
-          label: 'Question audio *',
-          required: true
+          label: 'Instruction (optional)',
+          placeholder: 'e.g., Answer the following question in 1-2 sentences.'
         },
         questionText: {
-          type: 'textarea',
-          label: 'Question text'
+          type: 'richtext',
+          label: 'Question *',
+          required: true,
+          placeholder: 'What is your favorite food?'
         }
       }
     },
     {
       id: 'answers',
-      title: 'Accepted Answers',
+      title: 'Answer Configuration',
       fields: {
-        acceptedAnswers: {
-          type: 'options-list',
-          label: 'List of accepted answers *',
-          required: true
+        correctAnswer: {
+          type: 'textarea',
+          label: 'Correct/Main Answer *',
+          required: true,
+          placeholder: 'The expected answer'
         },
-        caseSensitive: {
-          type: 'checkbox',
-          label: 'Case sensitive'
+        alternativeAnswers: {
+          type: 'options-list',
+          label: 'Alternative Accepted Answers (one per line)',
+          description: 'Other responses considered correct'
         }
       }
     },
     {
-      id: 'timing',
-      title: 'Timing',
+      id: 'grading',
+      title: 'Grading & Constraints',
       layout: 'grid',
       columns: 2,
       fields: {
-        preparationTime: {
-          type: 'number',
-          label: 'Preparation time (seconds)',
-          validation: { min: 0, max: 30 }
+        gradingMode: {
+          type: 'select',
+          label: 'Grading Mode',
+          options: [
+            { value: 'exact', label: 'Exact Match' },
+            { value: 'keyword', label: 'Keyword Match' },
+            { value: 'manual', label: 'Manual Review' }
+          ]
         },
-        recordingTime: {
+        caseSensitive: {
+          type: 'checkbox',
+          label: 'Case sensitive'
+        },
+        characterLimit: {
           type: 'number',
-          label: 'Recording time (seconds)',
-          validation: { min: 5, max: 30 }
+          label: 'Max characters (0 = no limit)',
+          validation: { min: 0 }
         }
       }
     }
@@ -759,23 +826,42 @@ export const RE_ORDER_PARAGRAPHS_SCHEMA: QuestionBuilderSchema = {
   sections: [
     {
       id: 'instruction',
-      title: 'Instruction',
+      title: 'Instructions',
       fields: {
         instruction: {
           type: 'textarea',
           label: 'Instruction',
-          placeholder: 'Arrange the following paragraphs in the correct order'
+          placeholder: 'Arrange the following sentences in the correct order.'
         }
       }
     },
     {
       id: 'paragraphs',
-      title: 'Paragraphs',
+      title: 'Paragraph Blocks',
       fields: {
         paragraphs: {
           type: 'options-list',
-          label: 'Paragraph blocks (drag to reorder) *',
-          required: true
+          label: 'Paragraph blocks (will be labeled A, B, C, ...)',
+          required: true,
+          description: 'Enter each paragraph/sentence on a new line'
+        }
+      }
+    },
+    {
+      id: 'correctOrder',
+      title: 'Correct Order',
+      fields: {
+        correctOrder: {
+          type: 'text',
+          label: 'Correct order *',
+          required: true,
+          placeholder: 'Enter order as letters: A→B→C or A,B,C',
+          description: 'The correct sequence of blocks'
+        },
+        explanation: {
+          type: 'textarea',
+          label: 'Explanation (optional)',
+          placeholder: 'Explain why this is the correct order'
         }
       }
     }
@@ -871,40 +957,58 @@ export const SELECT_MISSING_WORD_SCHEMA: QuestionBuilderSchema = {
   description: 'Select missing word from options',
   sections: [
     {
-      id: 'audio',
-      title: 'Audio Content',
+      id: 'passage',
+      title: 'Passage Content',
       fields: {
         instruction: {
           type: 'textarea',
-          label: 'Instruction'
+          label: 'Instruction (optional)',
+          placeholder: 'Select the correct word to fill each blank.'
         },
-        audio: {
-          type: 'upload',
-          label: 'Audio file *',
-          required: true
-        }
-      }
-    },
-    {
-      id: 'content',
-      title: 'Transcript & Missing Word',
-      fields: {
-        transcript: {
-          type: 'code-editor',
-          label: 'Transcript with [[blank_1]] *',
+        passage: {
+          type: 'richtext',
+          label: 'Passage with blanks *',
           required: true,
-          placeholder: 'The boy went to [[blank_1]] yesterday.'
+          placeholder: 'She _____ to school every day.\nUse _____ to mark each blank.'
         }
       }
     },
     {
-      id: 'options',
-      title: 'Word Options',
+      id: 'blanks',
+      title: 'Missing Word Options',
       fields: {
-        optionsList: {
+        blanks: {
           type: 'options-list',
-          label: 'Answer options *',
-          required: true
+          label: 'For each blank: correct_answer | distractor1 | distractor2 | ...',
+          required: true,
+          description: 'Format: goes | go | going | gone (first is correct answer)'
+        }
+      }
+    },
+    {
+      id: 'settings',
+      title: 'Settings',
+      layout: 'grid',
+      columns: 2,
+      fields: {
+        shuffleOptions: {
+          type: 'checkbox',
+          label: 'Shuffle options for students'
+        },
+        showExplanation: {
+          type: 'checkbox',
+          label: 'Show explanation after submit'
+        }
+      }
+    },
+    {
+      id: 'explanation',
+      title: 'Explanation',
+      fields: {
+        explanation: {
+          type: 'textarea',
+          label: 'Explanation (optional)',
+          placeholder: 'Explain the correct answers'
         }
       }
     }
