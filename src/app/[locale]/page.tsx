@@ -1,7 +1,7 @@
 import { Link } from '@/i18n/routing'
 import { getTranslations } from 'next-intl/server'
 import { Button } from '@/components/ui/button'
-import { getCurrentUser } from '@/modules/auth/actions'
+import { getCurrentUserRole } from '@/modules/auth/actions'
 import { redirect } from 'next/navigation'
 
 export default async function Home({ params }: { params: { locale: string } }) {
@@ -9,7 +9,7 @@ export default async function Home({ params }: { params: { locale: string } }) {
 
   // Nếu đã đăng nhập, redirect server-side về dashboard theo role
   try {
-    const user = await getCurrentUser()
+    const user = await getCurrentUserRole()
     if (user) {
       const locale = params?.locale || 'vi'
       if (user.role === 'teacher') return redirect(`/${locale}/teacher/dashboard`)

@@ -128,7 +128,30 @@ export async function signOut() {
 }
 
 /**
- * Get current user with role
+ * Get current user role quickly (for public pages like home redirect)
+ * Only queries Supabase + lightweight DB lookup, no relations
+ */
+export async function getCurrentUserRole() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) return null
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: {
+      id: true,
+      email: true,
+      fullName: true,
+      role: true,
+    }
+  })
+
+  return dbUser
+}
+
+/**
+ * Get current user with full details and relations
  */
 export async function getCurrentUser() {
   const supabase = await createClient()
