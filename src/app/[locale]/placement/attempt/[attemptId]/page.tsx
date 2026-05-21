@@ -43,7 +43,7 @@ interface Attempt {
   answers: Array<{ questionId: string; answerJson?: any; answerText?: string }>
 }
 
-function hasAnswerValue(answer: any) {
+function hasAnswerValue(answer: any): boolean {
   if (!answer || typeof answer !== 'object') return false
 
   return Object.entries(answer).some(([key, value]) => {
