@@ -1,11 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Search } from 'lucide-react'
 import { getQuestions } from '@/modules/assessment/actions'
+
+interface SelectableQuestion {
+  id: string
+  score: number
+}
 
 interface QuestionSelectorProps {
   onSelectQuestion: (questionId: string, score?: number) => void
+  onSelectQuestions?: (questions: SelectableQuestion[]) => void | Promise<void>
   onClose?: () => void
   excludeIds?: string[]
 }
@@ -37,11 +42,13 @@ export function QuestionSelector({
     }
   }
 
-  const filteredQuestions = questions.filter(
-    (q) =>
-      q.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      q.content.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredQuestions = questions.filter((q) => {
+    const lowerQuery = searchQuery.toLowerCase()
+    return (
+      q.title?.toLowerCase().includes(lowerQuery) ||
+      q.content?.toLowerCase?.().includes(lowerQuery)
+    )
+  })
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -116,9 +123,17 @@ export function QuestionSelector({
           <div className="flex-1 text-sm text-zinc-600 dark:text-zinc-400">Selected: {selectedIds.length}</div>
           <button
             onClick={async () => {
-              // Add all selected sequentially
-              for (const id of selectedIds) {
-                await onSelectQuestion(id, parseFloat(selectedScore))
+              const selectedQuestions = selectedIds.map((id) => ({
+                id,
+                score: parseFloat(selectedScore)
+              }))
+
+              if (onSelectQuestions) {
+                await onSelectQuestions(selectedQuestions)
+              } else {
+                for (const selectedQuestion of selectedQuestions) {
+                  await onSelectQuestion(selectedQuestion.id, selectedQuestion.score)
+                }
               }
               setSelectedIds([])
               onClose?.()

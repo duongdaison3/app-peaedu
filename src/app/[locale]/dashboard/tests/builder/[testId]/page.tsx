@@ -28,6 +28,11 @@ interface TestData {
   sections: any[]
 }
 
+interface SelectedQuestionItem {
+  id: string
+  score: number
+}
+
 export default function TestBuilderPage() {
   const params = useParams()
   const router = useRouter()
@@ -107,30 +112,42 @@ export default function TestBuilderPage() {
     }
   }
 
-  const handleAddQuestion = async (sectionId: string, questionId: string, score?: number) => {
+  const handleAddQuestions = async (sectionId: string, questionItems: SelectedQuestionItem[]) => {
     try {
-      const newQuestion = await addQuestionToSection({
-        sectionId,
-        questionId,
-        customScore: score
-      })
-
-      setTest({
-        ...test!,
-        sections: test!.sections.map((s) =>
-          s.id === sectionId
-            ? {
-                ...s,
-                questions: [...s.questions, newQuestion]
-              }
-            : s
+      const newQuestions = await Promise.all(
+        questionItems.map((questionItem) =>
+          addQuestionToSection({
+            sectionId,
+            questionId: questionItem.id,
+            customScore: questionItem.score
+          })
         )
-      })
+      )
+
+      setTest((prev) =>
+        prev
+          ? {
+              ...prev,
+              sections: prev.sections.map((section) =>
+                section.id === sectionId
+                  ? {
+                      ...section,
+                      questions: [...section.questions, ...newQuestions]
+                    }
+                  : section
+              )
+            }
+          : prev
+      )
       setShowQuestionSelector(null)
     } catch (error) {
       console.error('Error adding question:', error)
       alert('Error adding question')
     }
+  }
+
+  const handleAddQuestion = async (sectionId: string, questionId: string, score?: number) => {
+    await handleAddQuestions(sectionId, [{ id: questionId, score: score ?? 1 }])
   }
 
   const handleRemoveQuestion = async (sectionId: string, testQuestionId: string) => {
@@ -388,6 +405,9 @@ export default function TestBuilderPage() {
         <QuestionSelector
           onSelectQuestion={(qId, score) =>
             handleAddQuestion(showQuestionSelector, qId, score)
+          }
+          onSelectQuestions={(questionItems) =>
+            handleAddQuestions(showQuestionSelector, questionItems)
           }
           onClose={() => setShowQuestionSelector(null)}
           excludeIds={test.sections

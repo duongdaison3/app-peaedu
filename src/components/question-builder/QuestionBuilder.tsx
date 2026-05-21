@@ -1,12 +1,35 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
-import { createQuestion, updateQuestion } from '@/modules/assessment/actions'
+import { createQuestion, getQuestionFolders, updateQuestion } from '@/modules/assessment/actions'
 import { getQuestionSchema } from '@/lib/question-schemas'
 import { QuestionSettings } from './QuestionSettings'
 import { SchemaForm } from './SchemaForm'
 import type { QuestionType, QuestionSkill, QuestionDifficulty } from '@prisma/client'
+
+type FolderItem = {
+  id: string
+  title: string
+  children?: FolderItem[]
+}
+
+type FolderOption = {
+  id: string
+  title: string
+  depth: number
+}
+
+function flattenFolders(folders: FolderItem[], depth = 0): FolderOption[] {
+  return folders.flatMap((folder) => [
+    {
+      id: folder.id,
+      title: folder.title,
+      depth
+    },
+    ...(folder.children?.length ? flattenFolders(folder.children, depth + 1) : [])
+  ])
+}
 
 interface QuestionBuilderProps {
   folderId?: string
@@ -28,15 +51,41 @@ export function QuestionBuilder({
   const [difficulty, setDifficulty] = useState<QuestionDifficulty>(question?.difficulty || ('medium' as QuestionDifficulty))
   const [title, setTitle] = useState(question?.title || '')
   const [tags, setTags] = useState(question?.tags?.map((t: any) => t.tag?.name || t) || [])
+  const [folders, setFolders] = useState<FolderItem[]>([])
+  const [selectedFolderId, setSelectedFolderId] = useState<string>(folderId || question?.folderId || '')
   
   const [formData, setFormData] = useState<Record<string, any>>(
     question?.config_json || {}
   )
   
   const [loading, setLoading] = useState(false)
+  const [loadingFolders, setLoadingFolders] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const schema = getQuestionSchema(type)
+
+  useEffect(() => {
+    setSelectedFolderId(folderId || question?.folderId || '')
+  }, [folderId, question?.folderId])
+
+  useEffect(() => {
+    const loadFolders = async () => {
+      try {
+        setLoadingFolders(true)
+        const data = await getQuestionFolders()
+        setFolders(data as FolderItem[])
+      } catch (error) {
+        console.error('Error loading question folders:', error)
+      } finally {
+        setLoadingFolders(false)
+      }
+    }
+
+    void loadFolders()
+  }, [])
+
+  const folderOptions = flattenFolders(folders)
+  const selectedFolderLabel = folderOptions.find((folder) => folder.id === selectedFolderId)?.title
 
   const handleFormChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -112,7 +161,7 @@ export function QuestionBuilder({
       // -----------------------------------------------------------------
 
       const payload = {
-        folderId,
+        folderId: selectedFolderId || undefined,
         parentQuestionId,
         type,
         title,
@@ -152,9 +201,9 @@ export function QuestionBuilder({
                 {schema.label} - {schema.description}
               </p>
               <div className="mt-2 flex gap-2">
-                {folderId && (
+                {selectedFolderId && (
                   <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 rounded">
-                    Folder: {folderId}
+                    Folder: {selectedFolderLabel || selectedFolderId}
                   </span>
                 )}
                 {parentQuestionId && (
@@ -189,6 +238,33 @@ export function QuestionBuilder({
                 onTagsChange={setTags}
                 onTitleChange={setTitle}
               />
+
+              <div className="bg-white dark:bg-zinc-950 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
+                <div className="pb-4 border-b border-zinc-200 dark:border-zinc-800">
+                  <h3 className="font-medium text-zinc-900 dark:text-white">Question Folder</h3>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                    Folder
+                  </label>
+                  <select
+                    value={selectedFolderId}
+                    onChange={(e) => setSelectedFolderId(e.target.value)}
+                    className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  >
+                    <option value="">No folder</option>
+                    {folderOptions.map((folder) => (
+                      <option key={folder.id} value={folder.id}>
+                        {`${'— '.repeat(folder.depth)}${folder.title}`}
+                      </option>
+                    ))}
+                  </select>
+                  {loadingFolders && (
+                    <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Loading folders...</p>
+                  )}
+                </div>
+              </div>
 
               {/* Right Panel: Scoring & Constraints */}
               <div className="bg-white dark:bg-zinc-950 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">

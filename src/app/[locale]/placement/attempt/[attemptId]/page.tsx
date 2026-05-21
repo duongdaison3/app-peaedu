@@ -21,6 +21,8 @@ interface Question {
   media?: Array<{ type: string; url: string }>
   score?: number
   skill?: string
+  parentQuestionId?: string | null
+  configJson?: Record<string, any>
 }
 
 interface Section {
@@ -42,7 +44,23 @@ interface Attempt {
 }
 
 function hasAnswerValue(answer: any) {
-  return Boolean(answer?.selectedId || answer?.selectedValue || answer?.text || answer?.audioUrl)
+  if (!answer || typeof answer !== 'object') return false
+
+  return Object.entries(answer).some(([key, value]) => {
+    if (key === 'text') {
+      return typeof value === 'string' && value.trim().length > 0
+    }
+
+    if (Array.isArray(value)) {
+      return value.some((item) => item !== null && item !== undefined && String(item).trim() !== '')
+    }
+
+    if (value && typeof value === 'object') {
+      return hasAnswerValue(value)
+    }
+
+    return value !== null && value !== undefined && String(value).trim() !== ''
+  })
 }
 
 export default function PublicPlacementAttemptPage() {
@@ -61,6 +79,112 @@ export default function PublicPlacementAttemptPage() {
   const currentSection = useMemo(() => attempt?.test.sections.find(s => s.id === currentSectionId), [attempt, currentSectionId])
   const currentQuestion = useMemo(() => currentSection?.questions.find(q => q.id === currentQuestionId), [currentSection, currentQuestionId])
   const currentAnswer = answers.get(currentQuestionId)
+
+  const activeGroupRoot = useMemo(() => {
+    if (!currentSection || !currentQuestion) return null
+
+    if (currentQuestion.parentQuestionId) {
+      return currentSection.questions.find(question => question.id === currentQuestion.parentQuestionId) || null
+    }
+
+    const hasChildren = currentSection.questions.some(question => question.parentQuestionId === currentQuestion.id)
+    return hasChildren ? currentQuestion : null
+  }, [currentSection, currentQuestion])
+
+  const activeGroupQuestions = useMemo(() => {
+    if (!currentSection || !activeGroupRoot) return []
+    return currentSection.questions.filter(question => question.parentQuestionId === activeGroupRoot.id)
+  }, [currentSection, activeGroupRoot])
+
+  const setQuestionAnswer = (questionId: string, answer: any) => {
+    setAnswers(prev => {
+      const next = new Map(prev)
+      next.set(questionId, answer)
+      return next
+    })
+  }
+
+  const renderQuestionPreview = (question: Question) => (
+    <div className="space-y-3">
+      {question.media?.length ? (
+        <div className="space-y-2">
+          {question.media.map((media, idx) => (
+            <div key={idx} className="rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+              {media.type.startsWith('audio') ? (
+                <audio src={media.url} controls className="w-full" />
+              ) : (
+                <img src={media.url} alt="Question media" className="w-full max-h-64 object-cover" />
+              )}
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="prose dark:prose-invert max-w-none text-sm leading-7">
+        {question.configJson?.instruction || question.configJson?.prompt || question.configJson?.passage || question.content}
+      </div>
+    </div>
+  )
+
+  const renderQuestionArea = () => {
+    if (!currentQuestion) return null
+
+    if (activeGroupRoot && activeGroupQuestions.length > 0) {
+      return (
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+          <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 lg:sticky lg:top-4 lg:self-start">
+            <div className="mb-4 flex items-center justify-between gap-3 border-b border-zinc-200 pb-3 dark:border-zinc-800">
+              <div>
+                <h3 className="text-lg font-semibold text-zinc-900 dark:text-white">
+                  {activeGroupRoot.title || 'Nội dung nhóm câu hỏi'}
+                </h3>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">Nội dung cha cố định</p>
+              </div>
+              <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950/40 dark:text-blue-200">
+                Group
+              </span>
+            </div>
+
+            {renderQuestionPreview(activeGroupRoot)}
+          </div>
+
+          <div className="space-y-4 max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
+            {activeGroupQuestions.map((childQuestion, childIndex) => (
+              <div
+                key={childQuestion.id}
+                className={`rounded-2xl border bg-white p-4 shadow-sm dark:bg-zinc-950 ${
+                  childQuestion.id === currentQuestionId
+                    ? 'border-blue-500 ring-2 ring-blue-500/20 dark:border-blue-400'
+                    : 'border-zinc-200 dark:border-zinc-800'
+                }`}
+              >
+                <TestQuestionDisplay
+                  question={childQuestion as any}
+                  index={childIndex}
+                  total={activeGroupQuestions.length}
+                  answer={answers.get(childQuestion.id)}
+                  onAnswerChange={(childAnswer) => setQuestionAnswer(childQuestion.id, childAnswer)}
+                  readOnly={false}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="mx-auto max-w-2xl">
+        <TestQuestionDisplay
+          question={currentQuestion as any}
+          index={currentSection?.questions.findIndex(q => q.id === currentQuestion.id) || 0}
+          total={currentSection?.questions.length || 0}
+          answer={currentAnswer}
+          onAnswerChange={(nextAnswer) => setQuestionAnswer(currentQuestion.id, nextAnswer)}
+        />
+      </div>
+    )
+  }
 
   useEffect(() => {
     const load = async () => {
@@ -96,7 +220,18 @@ export default function PublicPlacementAttemptPage() {
       const payload: Array<{ questionId: string; answerJson?: any; answerText?: string }> = []
       for (const [questionId, answer] of answers.entries()) {
         if (!hasAnswerValue(answer)) continue
-        payload.push({ questionId, answerJson: answer?.selectedId || answer?.selectedValue || answer?.audioUrl ? { ...answer } : undefined, answerText: answer?.text || undefined })
+        const hasStructuredAnswer = Object.entries(answer || {}).some(([key, value]) => {
+          if (key === 'text') return false
+          if (Array.isArray(value)) return value.length > 0
+          if (value && typeof value === 'object') return hasAnswerValue(value)
+          return value !== null && value !== undefined && String(value).trim() !== ''
+        })
+
+        payload.push({
+          questionId,
+          answerJson: hasStructuredAnswer ? { ...answer } : undefined,
+          answerText: typeof answer?.text === 'string' && answer.text.trim().length > 0 ? answer.text : undefined
+        })
       }
       if (payload.length === 0) return
       setIsSaving(true)
@@ -126,7 +261,18 @@ export default function PublicPlacementAttemptPage() {
       const payload: Array<{ questionId: string; answerJson?: any; answerText?: string }> = []
       for (const [questionId, answer] of answers.entries()) {
         if (!hasAnswerValue(answer)) continue
-        payload.push({ questionId, answerJson: answer?.selectedId || answer?.selectedValue || answer?.audioUrl ? { ...answer } : undefined, answerText: answer?.text || undefined })
+        const hasStructuredAnswer = Object.entries(answer || {}).some(([key, value]) => {
+          if (key === 'text') return false
+          if (Array.isArray(value)) return value.length > 0
+          if (value && typeof value === 'object') return hasAnswerValue(value)
+          return value !== null && value !== undefined && String(value).trim() !== ''
+        })
+
+        payload.push({
+          questionId,
+          answerJson: hasStructuredAnswer ? { ...answer } : undefined,
+          answerText: typeof answer?.text === 'string' && answer.text.trim().length > 0 ? answer.text : undefined
+        })
       }
 
       if (payload.length > 0) {
@@ -184,11 +330,7 @@ export default function PublicPlacementAttemptPage() {
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-6">
-          {currentQuestion && (
-            <div className="mx-auto max-w-2xl">
-              <TestQuestionDisplay question={currentQuestion as any} index={currentSection?.questions.findIndex(q => q.id === currentQuestion.id) || 0} total={currentSection?.questions.length || 0} answer={currentAnswer} onAnswerChange={handleAnswerChange} />
-            </div>
-          )}
+          {renderQuestionArea()}
         </div>
 
         <div className="flex items-center justify-between border-t border-zinc-200 bg-zinc-50 px-6 py-4 dark:border-zinc-800 dark:bg-zinc-900">

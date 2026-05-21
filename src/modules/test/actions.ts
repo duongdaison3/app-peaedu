@@ -661,8 +661,10 @@ export async function getTestAttemptDetails(attemptId: string) {
                       explanation: true,
                       score: true,
                       type: true,
+                      parentQuestionId: true,
                       skill: true,
                       difficulty: true,
+                      configJson: true,
                       options: true,
                       media: true
                     }
