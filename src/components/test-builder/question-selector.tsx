@@ -17,6 +17,7 @@ interface QuestionSelectorProps {
 
 export function QuestionSelector({
   onSelectQuestion,
+  onSelectQuestions,
   onClose,
   excludeIds = []
 }: QuestionSelectorProps) {

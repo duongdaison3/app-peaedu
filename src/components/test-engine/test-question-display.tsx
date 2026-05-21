@@ -84,7 +84,7 @@ function normalizeOptionGroups(source: any): string[][] {
         }
 
         if (typeof item.text === 'string') {
-          return item.text.split('|').map((entry) => entry.trim()).filter(Boolean)
+          return item.text.split('|').map((entry: string) => entry.trim()).filter(Boolean)
         }
       }
 
